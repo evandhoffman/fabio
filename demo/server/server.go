@@ -63,9 +63,7 @@ func main() {
 	var response_str string
 
 	if response_size > 0 {
-		for i:= 0; i < response_size; i++ {
-			response_str +=  "."
-		}
+		response_str = strings.Repeat(".", response_size)
 	}
 
 	// register prefixes
