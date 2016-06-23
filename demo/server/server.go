@@ -45,12 +45,14 @@ import (
 
 func main() {
 	var addr, consul, name, prefix, proto, token string
+	var response_size int
 	flag.StringVar(&addr, "addr", "127.0.0.1:5000", "host:port of the service")
 	flag.StringVar(&consul, "consul", "127.0.0.1:8500", "host:port of the consul agent")
 	flag.StringVar(&name, "name", filepath.Base(os.Args[0]), "name of the service")
 	flag.StringVar(&prefix, "prefix", "", "comma-sep list of host/path prefixes to register")
 	flag.StringVar(&proto, "proto", "http", "protocol for endpoints: http or ws")
 	flag.StringVar(&token, "token", "", "consul ACL token")
+	flag.IntVar(&response_size, "response_size", 0, "Desired response size")
 	flag.Parse()
 
 	if prefix == "" {
@@ -58,14 +60,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	var response_str string
+
+	if response_size > 0 {
+		for i:= 0; i < response_size; i++ {
+			response_str +=  "."
+		}
+	}
+
 	// register prefixes
 	prefixes := strings.Split(prefix, ",")
 	for _, p := range prefixes {
 		switch proto {
 		case "http":
-			http.HandleFunc(p, func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprintf(w, "Serving %s from %s on %s\n", r.RequestURI, name, addr)
-			})
+			if response_size > 0 {
+				http.HandleFunc(p, func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprintf(w, "%s\n", response_str)
+				})
+
+			} else {
+				http.HandleFunc(p, func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprintf(w, "Serving %s from %s on %s\n", r.RequestURI, name, addr)
+				})
+			}
 		case "ws":
 			http.Handle(p, websocket.Handler(EchoServer))
 		default:
