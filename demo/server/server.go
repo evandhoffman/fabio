@@ -38,6 +38,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+	"math/rand"
 
 	"github.com/hashicorp/consul/api"
 	"golang.org/x/net/websocket"
@@ -46,6 +48,7 @@ import (
 func main() {
 	var addr, consul, name, prefix, proto, token string
 	var response_size int
+	var sleep_delay_ms int64
 	flag.StringVar(&addr, "addr", "127.0.0.1:5000", "host:port of the service")
 	flag.StringVar(&consul, "consul", "127.0.0.1:8500", "host:port of the consul agent")
 	flag.StringVar(&name, "name", filepath.Base(os.Args[0]), "name of the service")
@@ -53,6 +56,7 @@ func main() {
 	flag.StringVar(&proto, "proto", "http", "protocol for endpoints: http or ws")
 	flag.StringVar(&token, "token", "", "consul ACL token")
 	flag.IntVar(&response_size, "response_size", 0, "Desired response size")
+	flag.Int64Var(&sleep_delay_ms, "sleep_delay_ms", 0, "Maximum number of milliseconds to sleep before sending response")
 	flag.Parse()
 
 	if prefix == "" {
@@ -73,6 +77,11 @@ func main() {
 		case "http":
 			if response_size > 0 {
 				http.HandleFunc(p, func(w http.ResponseWriter, r *http.Request) {
+					if sleep_delay_ms > 0 {
+						duration := rand.Int63n(sleep_delay_ms)
+						log.Printf("Sleeping for %d ms", duration)
+						time.Sleep(time.Duration(duration) * time.Millisecond)
+					}
 					fmt.Fprintf(w, "%s\n", response_str)
 				})
 
