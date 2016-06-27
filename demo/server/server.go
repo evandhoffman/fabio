@@ -71,17 +71,38 @@ func main() {
 		response_str = strings.Repeat(".", response_size)
 	}
 
+	var now, last_time time.Time
+	var current_count, last_count, print_interval int
+
+	last_time = time.Now()
+	now = time.Now()
+	current_count = 0
+	last_count = 0
+	print_interval = 30
 
 	// register prefixes
 	prefixes := strings.Split(prefix, ",")
 	for _, p := range prefixes {
 		switch proto {
 		case "http":
+
 			if response_size > 0 {
 				http.HandleFunc(p, func(w http.ResponseWriter, r *http.Request) {
+					current_count++
+					if ((current_count - last_count) >= print_interval) {
+						now = time.Now()
+						elapsed := now.Sub(last_time).Seconds()
+						last_time = now
+						rate := float64(current_count - last_count) / elapsed
+						last_count = current_count
+						log.Printf("Rate: %0.2f", rate)
+					}
+
+
+
 					if sleep_delay_ms > 0 {
 						duration := rand.Int63n(sleep_delay_ms)
-						log.Printf("Sleeping for %d ms", duration)
+					//	log.Printf("Sleeping for %d ms", duration)
 						time.Sleep(time.Duration(duration) * time.Millisecond)
 					}
 					fmt.Fprintf(w, "%s\n", response_str)
