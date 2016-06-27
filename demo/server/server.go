@@ -46,7 +46,7 @@ import (
 )
 
 func main() {
-	var addr, consul, name, prefix, proto, token string
+	var addr, consul, name, prefix, proto, token, consul_tags string
 	var response_size int
 	var sleep_delay_ms int64
 	flag.StringVar(&addr, "addr", "127.0.0.1:5000", "host:port of the service")
@@ -57,6 +57,7 @@ func main() {
 	flag.StringVar(&token, "token", "", "consul ACL token")
 	flag.IntVar(&response_size, "response_size", 0, "Desired response size")
 	flag.Int64Var(&sleep_delay_ms, "sleep_delay_ms", 0, "Maximum number of milliseconds to sleep before sending response")
+	flag.StringVar(&consul_tags, "consul_tags", "", "comma-separated list of consul tags - see https://docs.traefik.io/toml/#consul-catalog-backend for info")
 	flag.Parse()
 
 	if prefix == "" {
@@ -69,6 +70,7 @@ func main() {
 	if response_size > 0 {
 		response_str = strings.Repeat(".", response_size)
 	}
+
 
 	// register prefixes
 	prefixes := strings.Split(prefix, ",")
@@ -115,6 +117,13 @@ func main() {
 	var tags []string
 	for _, p := range prefixes {
 		tags = append(tags, "urlprefix-"+p)
+	}
+
+	// Arbitrary tag array
+	consul_tag_array := strings.Split(consul_tags, ",")
+	for _, t := range consul_tag_array {
+		log.Printf("Adding tag: %s", t)
+		tags = append(tags, t)
 	}
 
 	// get host and port as string/int
